@@ -11,7 +11,8 @@ LLM에게 확률을 추정시키지 않는 이유는 검증이 불가능하기 �
 import os
 import json
 import urllib.request
-from datetime import date
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import matplotlib
 matplotlib.use("Agg")
@@ -25,8 +26,8 @@ TARGET = "롯데"
 
 # --- 1. 이력 누적 -----------------------------------------------------------
 def record(prob: float, rank: int) -> pd.DataFrame:
-    row = pd.DataFrame([{"date": date.today().isoformat(),
-                         "prob": prob, "rank": rank}])
+    today = datetime.now(ZoneInfo("Asia/Seoul")).date().isoformat()
+    row = pd.DataFrame([{"date": today, "prob": prob, "rank": rank}])
     if os.path.exists(HISTORY):
         hist = pd.read_csv(HISTORY)
         hist = hist[hist.date != row.date.iloc[0]]          # 같은 날 재실행 시 갱신
