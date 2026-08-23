@@ -1,0 +1,35 @@
+name: daily-playoff-odds
+
+on:
+  schedule:
+    - cron: "0 22 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install numpy pandas matplotlib requests
+      - name: Run simulation
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          python crawl.py
+          python make_schedule.py
+          python run_daily.py
+      - name: Commit history
+        run: |
+          git config user.name  "github-actions"
+          git config user.email "actions@github.com"
+          git add data/ output/
+          git diff --staged --quiet || git commit -m "odds: $(date +%F)"
+          git push
+        
