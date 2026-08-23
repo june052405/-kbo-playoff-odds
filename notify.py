@@ -87,13 +87,13 @@ def brief(prob: float, delta: float, rank: int, top_game: dict) -> str:
                  "x-api-key": key,
                  "anthropic-version": "2023-06-01"},
     )
-     try:
+    try:
         with urllib.request.urlopen(req, timeout=30) as r:
-            print(f"  [OK] 알림 전송 완료 (HTTP {r.status})")
+            body = json.load(r)
+        return "".join(b.get("text", "") for b in body["content"]).strip()
     except Exception as e:
-        # 알림은 부가 기능이므로 실패해도 파이프라인을 중단하지 않는다.
-        # 계산과 검증이 끝난 결과를 전송 실패 때문에 버리는 것은 손실이 크다.
-        print(f"  [WARN] 알림 전송 실패 ({e}) — 결과는 정상 기록됨")
+        print(f"  [WARN] 브리핑 생성 실패 ({e}) — 기본 문구 사용")
+        return fallback
 
 
 # --- 4. Discord 전송 --------------------------------------------------------
@@ -119,5 +119,11 @@ def send(text: str, chart_path: str | None = None):
     req = urllib.request.Request(
         url, data=b"".join(parts),
         headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        print(f"  [OK] 알림 전송 완료 (HTTP {r.status})")
+
+    # 알림은 부가 기능이므로 실패해도 파이프라인을 중단하지 않는다.
+    # 계산과 검증을 마친 결과를 전송 실패 때문에 버리는 것은 손실이 크다.
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            print(f"  [OK] 알림 전송 완료 (HTTP {r.status})")
+    except Exception as e:
+        print(f"  [WARN] 알림 전송 실패 ({e}) — 결과는 정상 기록됨")
